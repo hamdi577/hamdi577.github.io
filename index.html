@@ -1,12 +1,654 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benim Blogum</title>
+  <meta charset="UTF-8">
+  <title>Okey 101 Eşli Puan Takip</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css"/>
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/roboto@3.3.1/400.css">
+  <!-- Chart.js (not required here, but for graphing extras) -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script> -->
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      background: #F3F4F6;
+      color: #1E293B;
+      min-width: 320px;
+    }
+    /* For nice PDF appearance */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 30px; }
+    .custom-shadow { box-shadow: 0 2px 16px 0 rgba(15,23,42,.08); }
+    .popup-bg { background: rgba(0,0,0,0.25); }
+    .stamp {
+      font-size: 1.3rem;
+      font-family: 'Roboto', Arial, sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .75rem;
+      padding: .25rem 1.5rem;
+    }
+    .stamp-zafer {
+      color: #1A7F37;
+      background: #D1FAE5;
+      border: 2px dashed #22C55E;
+    }
+    .stamp-kaybeden {
+      color: #B91C1C;
+      background: #FECACA;
+      border: 2px dashed #EF4444;
+    }
+    @media (max-width: 600px) {
+      html { font-size: 16px }
+      .team-table th, .team-table td { font-size: 0.90rem;}
+    }
+  </style>
 </head>
 <body>
-    <h1>Merhaba Dünya!</h1>
-    <p>Benim ilk GitHub blog siteme hoş geldiniz.z</p>
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="flex items-center justify-between px-4 py-2 bg-blue-700 text-white shadow">
+      <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
+        <i class="fas fa-dice fa-fw"></i>
+        Okey 101 Eşli Puan Takip
+      </h1>
+      <div class="flex items-center gap-5">
+        <!-- Geçmişi Görüntüle -->
+        <button id="historyBtn" class="text-white relative hover:text-blue-200 transition" title="Oyun Geçmişi">
+          <i class="fas fa-clock-rotate-left text-2xl"></i>
+        </button>
+        <!-- Oyuncu Girişi Popup -->
+        <button id="addPlayersBtn" class="px-3 py-1 rounded bg-white text-blue-700 hover:bg-blue-100 font-bold text-lg focus:outline-none shadow flex items-center gap-2" title="Oyuncuları Ayarla">
+          <i class="fas fa-user-plus"></i>
+          <span class="hidden sm:inline">Oyuncular</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col items-center px-2 pb-8 pt-4 max-w-3xl mx-auto w-full">
+
+      <!-- Oyuncu & Takım Bilgi Kartı  -->
+      <div class="w-full custom-shadow rounded-xl bg-white p-4 mb-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <span class="font-semibold">Takımlar:</span>
+            <span id="teamA" class="bg-indigo-100 text-blue-800 px-2 py-0.5 rounded font-semibold mr-2"></span>
+            <span class="text-gray-500 font-bold">vs</span>
+            <span id="teamB" class="bg-pink-100 text-pink-800 px-2 py-0.5 rounded font-semibold ml-2"></span>
+          </div>
+          <div class="flex items-center gap-2 text-gray-600 text-sm">
+            <i class="fas fa-clock text-gray-400"></i> 
+            <span id="gameTimer">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Puan Tablosu -->
+      <div class="w-full custom-shadow rounded-xl bg-white p-2 md:p-4 mb-2 overflow-x-auto">
+        <table class="w-full text-center table-auto team-table">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="py-2 px-2">El</th>
+              <th class="py-2 px-2"><span id="player1Head"></span></th>
+              <th class="py-2 px-2"><span id="player2Head"></span></th>
+              <th class="py-2 px-2"><span id="player3Head"></span></th>
+              <th class="py-2 px-2"><span id="player4Head"></span></th>
+              <th class="py-2 px-2">Toplam A</th>
+              <th class="py-2 px-2">Toplam B</th>
+            </tr>
+          </thead>
+          <tbody id="scoreTableBody">
+            <!-- Satırlar dinamik eklenecek -->
+          </tbody>
+          <tfoot>
+            <tr class="bg-blue-50 font-bold border-t">
+              <td class="py-1">Toplam</td>
+              <td id="total1" class="py-1"></td>
+              <td id="total2" class="py-1"></td>
+              <td id="total3" class="py-1"></td>
+              <td id="total4" class="py-1"></td>
+              <td id="totalA" class="py-1"></td>
+              <td id="totalB" class="py-1"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Puan Girişi ve Kontroller -->
+      <div id="scoreInputArea" class="w-full bg-blue-50 rounded-xl px-3 py-3 custom-shadow flex flex-col sm:flex-row items-center gap-3 mb-3">
+        <div class="flex gap-2 flex-1">
+          <input type="number" id="score1" class="border rounded px-2 py-1 w-16 focus:outline-none focus:ring focus:border-blue-400" placeholder="P1" />
+          <input type="number" id="score2" class="border rounded px-2 py-1 w-16 focus:outline-none focus:ring focus:border-blue-400" placeholder="P2" />
+          <input type="number" id="score3" class="border rounded px-2 py-1 w-16 focus:outline-none focus:ring focus:border-blue-400" placeholder="P3" />
+          <input type="number" id="score4" class="border rounded px-2 py-1 w-16 focus:outline-none focus:ring focus:border-blue-400" placeholder="P4" />
+        </div>
+        <button id="addRoundBtn" class="flex-0 px-5 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition focus:outline-none flex items-center gap-2">
+          <i class="fas fa-plus-circle"></i>
+          Puan Ekle
+        </button>
+      </div>
+
+      <!-- Oyun Sonlandırma & Dışa Aktarma -->
+      <div class="w-full flex justify-between items-center mt-4">
+        <button id="endGameBtn" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-2 focus:outline-none">
+          <i class="fas fa-flag-checkered"></i>
+          Oyunu Bitir
+        </button>
+      </div>
+    </main>
+
+    <!-- Oyuncu Giriş Popup -->
+    <div id="playerModal" class="fixed inset-0 z-50 hidden popup-bg flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-2xl w-80 p-6 relative">
+        <button class="absolute top-3 right-3 text-gray-400 hover:text-red-600 text-xl focus:outline-none" onclick="closePlayerModal()" title="Kapat"><i class="fas fa-times"></i></button>
+        <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">
+          <i class="fas fa-user-edit"></i>
+          Oyuncu İsimleri
+        </h2>
+        <form id="playerForm" autocomplete="off">
+          <div class="mb-2">
+            <input id="player1Input" required type="text" class="border-b-2 border-blue-400 w-full py-1 px-2 mb-2 focus:outline-none" maxlength="15" placeholder="1. Oyuncu Adı"/>
+            <input id="player2Input" required type="text" class="border-b-2 border-pink-300 w-full py-1 px-2 mb-2 focus:outline-none" maxlength="15" placeholder="2. Oyuncu Adı"/>
+            <input id="player3Input" required type="text" class="border-b-2 border-blue-400 w-full py-1 px-2 mb-2 focus:outline-none" maxlength="15" placeholder="3. Oyuncu Adı"/>
+            <input id="player4Input" required type="text" class="border-b-2 border-pink-300 w-full py-1 px-2 focus:outline-none" maxlength="15" placeholder="4. Oyuncu Adı"/>
+          </div>
+          <button type="submit" class="mt-3 w-full py-2 rounded bg-blue-700 hover:bg-blue-800 text-white font-bold text-lg">
+            Oyunu Başlat
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Geçmiş Popup -->
+    <div id="historyModal" class="fixed inset-0 z-50 hidden popup-bg flex justify-center items-start pt-14">
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-auto p-6 relative overflow-y-auto max-h-[86vh]">
+        <button class="absolute top-3 right-3 text-gray-400 hover:text-red-600 text-xl focus:outline-none" onclick="closeHistoryModal()" title="Kapat"><i class="fas fa-times"></i></button>
+        <div class="mb-3 flex items-center gap-2">
+          <i class="fas fa-clock-rotate-left text-lg text-blue-600"></i>
+          <h2 class="text-lg font-bold">Oyun Geçmişi</h2>
+        </div>
+        <div id="historyList"></div>
+      </div>
+    </div>
+
+    <!-- Sonuç Popup -->
+    <div id="resultModal" class="fixed inset-0 z-50 hidden popup-bg flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-auto p-9 pt-6 pb-6 relative flex flex-col items-center">
+        <button class="absolute top-3 right-3 text-gray-400 hover:text-red-600 text-xl focus:outline-none" onclick="closeResultModal()" title="Kapat"><i class="fas fa-times"></i></button>
+        <h2 class="text-2xl font-bold mb-6">Oyun Sonu</h2>
+        <div class="w-full mb-6">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col items-center gap-1">
+              <span id="finalTeamA" class="font-semibold px-2 py-1 rounded bg-indigo-50 text-blue-800"></span>
+              <span id="finalScoreA" class="font-bold text-xl"></span>
+              <span id="finalStampA"></span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+              <span id="finalTeamB" class="font-semibold px-2 py-1 rounded bg-pink-50 text-pink-800"></span>
+              <span id="finalScoreB" class="font-bold text-xl"></span>
+              <span id="finalStampB"></span>
+            </div>
+          </div>
+          <div class="text-center text-gray-500 mt-4">
+            <span id="gameTimeInfo"></span>
+          </div>
+        </div>
+        <div class="flex w-full gap-3 justify-center">
+          <button onclick="restartSamePlayers()" class="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-800 text-white font-bold flex items-center gap-2 justify-center">
+            <i class="fas fa-redo"></i> Aynı Kişilerle Tekrar Oyna
+          </button>
+          <button onclick="exportScoresToImage()" class="flex-1 py-2 rounded bg-green-600 hover:bg-green-800 text-white font-bold flex items-center gap-2 justify-center">
+            <i class="fas fa-image"></i> Tabloyu Dışa Aktar
+          </button>
+        </div>
+        <div class="text-xs mt-3 text-gray-400 text-center">Dışa aktar, sadece puan tablosunun fotoğrafını alır.</div>
+        <!-- Görsel çıktı önizleme -->
+        <div id="tableExportPreview" class="hidden mt-6"></div>
+      </div>
+    </div>
+
+    <!-- Tablo Export için container (gizli) -->
+    <div id="tableExportContainer" class="hidden p-4 bg-white rounded-lg max-w-2xl mx-auto">
+      <!-- Buraya tablo kopyası gelecek -->
+    </div>
+  </div>
+  <!-- html2canvas for image export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    // Uygulama Durumu
+    let players = ['', '', '', ''];
+    let rounds = []; // [{r:1, scores:[10,4,2,3]}]
+    let startTime = null;
+    let timerInterval = null;
+    let gameActive = false;
+    let history = [];
+    // Takım isimleri
+    function getTeamNames() {
+      return [
+        `${players[0]} & ${players[2]}`,
+        `${players[1]} & ${players[3]}`
+      ];
+    }
+    function updateHeader() {
+      document.getElementById('teamA').textContent = getTeamNames()[0];
+      document.getElementById('teamB').textContent = getTeamNames()[1];
+      document.getElementById('player1Head').textContent = players[0];
+      document.getElementById('player2Head').textContent = players[1];
+      document.getElementById('player3Head').textContent = players[2];
+      document.getElementById('player4Head').textContent = players[3];
+      // Set placeholder for input(s)
+      document.getElementById('score1').placeholder = players[0];
+      document.getElementById('score2').placeholder = players[1];
+      document.getElementById('score3').placeholder = players[2];
+      document.getElementById('score4').placeholder = players[3];
+    }
+
+    // Oyun Zamanlayıcı
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      function formatTime(tms) {
+        let s = Math.floor((tms/1000)%60);
+        let m = Math.floor((tms/60000)%60);
+        let h = Math.floor(tms/3600000);
+        return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      }
+      timerInterval = setInterval(()=>{
+        if (!startTime) return;
+        let duration = Date.now() - startTime;
+        document.getElementById('gameTimer').textContent = formatTime(duration);
+      }, 1000);
+    }
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+    }
+
+    // Puan Tablosu Güncelle
+    function updateScoreTable() {
+      const tbody = document.getElementById('scoreTableBody');
+      tbody.innerHTML = '';
+      let total = [0,0,0,0];
+      let totalA = 0, totalB = 0;
+      for (let i=0;i<rounds.length;++i) {
+        const r = rounds[i];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td>
+          <td>${r.scores[0]!=null?r.scores[0]:''}</td>
+          <td>${r.scores[1]!=null?r.scores[1]:''}</td>
+          <td>${r.scores[2]!=null?r.scores[2]:''}</td>
+          <td>${r.scores[3]!=null?r.scores[3]:''}</td>
+          <td class="font-bold">${r.scores[0]+r.scores[2]}</td>
+          <td class="font-bold">${r.scores[1]+r.scores[3]}</td>`;
+        tbody.appendChild(tr);
+        for(let j=0;j<4;++j) total[j] += +r.scores[j]||0;
+        totalA += (+r.scores[0]||0) + (+r.scores[2]||0);
+        totalB += (+r.scores[1]||0) + (+r.scores[3]||0);
+      }
+      document.getElementById('total1').textContent = total[0];
+      document.getElementById('total2').textContent = total[1];
+      document.getElementById('total3').textContent = total[2];
+      document.getElementById('total4').textContent = total[3];
+      document.getElementById('totalA').textContent = totalA;
+      document.getElementById('totalB').textContent = totalB;
+    }
+    // Form Temizleme
+    function clearRoundInputs() {
+      for(let i=1;i<=4;++i) document.getElementById('score'+i).value='';
+    }
+    // Oyun Başlat
+    function startGame(pl) {
+      players = pl.slice(0,4);
+      rounds = [];
+      startTime = Date.now();
+      gameActive = true;
+      updateHeader();
+      updateScoreTable();
+      clearRoundInputs();
+      startTimer();
+      document.getElementById('scoreInputArea').classList.remove('opacity-40','pointer-events-none');
+    }
+    // Oyun Sonlandır
+    function endGame(showModal=true) {
+      stopTimer();
+      gameActive = false;
+      // Kayıt
+      let duration = Date.now() - startTime;
+      let finishTime = new Date().toISOString();
+      let entry = {
+        id: 'okey101-'+Date.now()+'-'+Math.floor(Math.random()*1000000),
+        players: [...players],
+        teams: getTeamNames(),
+        rounds: JSON.parse(JSON.stringify(rounds)),
+        totals: getTotals(),
+        finishTime,
+        duration
+      };
+      saveToHistory(entry);
+      if(showModal) showResultModal(entry);
+      document.getElementById('scoreInputArea').classList.add('opacity-40','pointer-events-none');
+    }
+    function getTotals() {
+      let [p1,p2,p3,p4] = [0,0,0,0];
+      let ta=0,tb=0;
+      rounds.forEach(r=>{
+        p1+=(+r.scores[0]||0);
+        p2+=(+r.scores[1]||0);
+        p3+=(+r.scores[2]||0);
+        p4+=(+r.scores[3]||0);
+        ta+=(+r.scores[0]||0)+(+r.scores[2]||0);
+        tb+=(+r.scores[1]||0)+(+r.scores[3]||0);
+      });
+      return {p:[p1,p2,p3,p4], ta:ta, tb:tb};
+    }
+    // Oyun Geçmişini Yükle/Kaydet
+    function loadHistory(){
+      try{
+        let data = localStorage.getItem('okey101history');
+        history = data?JSON.parse(data):[];
+      }catch{ history = []; }
+    }
+    function saveToHistory(entry){
+      loadHistory();
+      history.unshift(entry);
+      localStorage.setItem('okey101history', JSON.stringify(history.slice(0,25)));
+    }
+    // Oyun Geçmişi Göster
+    function showHistoryModal() {
+      loadHistory();
+      const hisDiv = document.getElementById('historyList');
+      hisDiv.innerHTML = '';
+      if(!history.length){
+        hisDiv.innerHTML = `<div class="text-gray-400 text-center p-4 flex flex-col items-center"><i class="fas fa-folder-open text-3xl mb-2"></i>Henüz oyun kaydı yok</div>`;
+        openModal('historyModal');
+        return;
+      }
+      history.forEach((item,idx)=>{
+        const date = new Date(item.finishTime);
+        let dstr = date.toLocaleDateString('tr-TR')+' '+date.toLocaleTimeString('tr-TR');
+        let winner = (item.totals.ta>item.totals.tb)? 0 : (item.totals.tb>item.totals.ta?1:-1);
+        let teams = item.teams;
+        let trow = '';
+        trow += `<div class="flex gap-2 items-center mb-1 mt-3">
+          <span class="font-bold">${teams[0]}</span>
+          <span class="px-2 font-mono">${item.totals.ta}</span> 
+          <span class="font-bold text-blue-500">/</span> 
+          <span class="font-mono">${item.totals.tb}</span>
+          <span class="font-bold">${teams[1]}</span>
+        </div>`;
+        trow += `<div class="text-xs text-gray-400 mb-1 flex items-center gap-2"><i class="fas fa-calendar"></i> ${dstr}&nbsp; <i class="fas fa-hourglass-half"></i> ${formatTime(item.duration)}</div>`;
+        // Export/Edit
+        trow += `<div class="flex gap-1 mb-2">
+          <button class="text-blue-600 hover:underline text-xs font-semibold" onclick="replayGame('${item.id}')"><i class="fas fa-redo"></i> Aynı isimlerle başlat</button>
+          <button class="text-green-600 hover:underline text-xs font-semibold" onclick="showPastTable('${item.id}')"><i class="fas fa-table"></i> Tabloyu Gör</button>
+        </div>`;
+        const div = document.createElement('div');
+        div.className = 'border border-gray-200 rounded-2xl px-4 pt-1 pb-2 mb-1 bg-gray-50';
+        div.innerHTML = trow;
+        hisDiv.append(div);
+      });
+      openModal('historyModal');
+    }
+    function formatTime(ms) {
+      let sec = Math.floor((ms/1000)%60);
+      let min = Math.floor((ms/60000)%60);
+      let hr = Math.floor(ms/3600000);
+      return (hr?String(hr).padStart(2,'0')+':':'')+String(min).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+    }
+    // ---------------- Popuplar -----------------
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.body.classList.add('overflow-y-hidden');
+    }
+    function closePlayerModal() {
+      document.getElementById('playerModal').classList.add('hidden');
+      document.body.classList.remove('overflow-y-hidden');
+    }
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
+      document.body.classList.remove('overflow-y-hidden');
+    }
+    function closeResultModal() {
+      document.getElementById('resultModal').classList.add('hidden');
+      document.body.classList.remove('overflow-y-hidden');
+      document.getElementById('tableExportPreview').classList.add('hidden');
+      document.getElementById('tableExportPreview').innerHTML="";
+    }
+
+    // Açılışta oyuncu modalı otomatik açılır, oyun başlat mamışsa
+    window.addEventListener('load', function(){
+      // Otomatik aç oyuncu modalı
+      setTimeout(()=>{openModal('playerModal')}, 200);
+      loadHistory();
+    });
+    // Oyuncu ekle modal açma
+    document.getElementById('addPlayersBtn').onclick = () => {
+      document.getElementById('player1Input').value = players[0]||"";
+      document.getElementById('player2Input').value = players[1]||"";
+      document.getElementById('player3Input').value = players[2]||"";
+      document.getElementById('player4Input').value = players[3]||"";
+      openModal('playerModal');
+    };
+    // Oyuncu giriş olayı
+    document.getElementById('playerForm').onsubmit = (e) => {
+      e.preventDefault();
+      let pl = [
+        document.getElementById('player1Input').value.trim()||"P1",
+        document.getElementById('player2Input').value.trim()||"P2",
+        document.getElementById('player3Input').value.trim()||"P3",
+        document.getElementById('player4Input').value.trim()||"P4"
+      ];
+      closePlayerModal();
+      startGame(pl);
+    };
+
+    // Round ekle
+    document.getElementById('addRoundBtn').onclick = function() {
+      if(!gameActive) return;
+      let s1 = +(document.getElementById('score1').value);
+      let s2 = +(document.getElementById('score2').value);
+      let s3 = +(document.getElementById('score3').value);
+      let s4 = +(document.getElementById('score4').value);
+      if(isNaN(s1)||isNaN(s2)||isNaN(s3)||isNaN(s4)) { alert('Tüm puanları girmelisiniz.'); return; }
+      rounds.push({scores:[s1,s2,s3,s4]});
+      updateScoreTable();
+      clearRoundInputs();
+    };
+
+    // Oyunu bitir
+    document.getElementById('endGameBtn').onclick = function() {
+      if(!gameActive) return;
+      if(!rounds.length) {
+        if(confirm("Hiç el oynanmadı. Yine de bitirmek istiyor musunuz?")) {
+          endGame();
+        }
+      } else {
+        endGame();
+      }
+    };
+
+    // Tarihçi butonu
+    document.getElementById('historyBtn').onclick = showHistoryModal;
+
+    // Export Fonksiyonları (Tabloyu Resim olarak çıkart)
+    async function exportScoresToImage(entry=null) {
+      // Eğer sonuç popuplarındaysa, "tableExportContainer" div'e tabloyu kopyala ve html2canvas ile al
+      let source; 
+      if(entry){
+        source = buildTableHTML(entry, true); // sadece tablo kısmını döndür
+      }else{
+        source = buildCurrentTableExportHTML();
+      }
+      let container = document.getElementById('tableExportContainer');
+      container.innerHTML = source;
+      container.classList.remove('hidden');
+      setTimeout(()=>{
+        html2canvas(container, { scale:2, backgroundColor:'#FFF' }).then(canvas=>{
+          let imgData = canvas.toDataURL();
+          let preview = document.getElementById('tableExportPreview');
+          preview.innerHTML = `<img src="${imgData}" class="rounded-lg border w-full h-auto"/><a href="${imgData}" download="Okey101_PuanTablosu.png" class="block py-2 mt-2 text-center rounded bg-green-600 hover:bg-green-800 text-white font-bold">Resmi İndir</a>`;
+          preview.classList.remove('hidden');
+        });
+        container.classList.add('hidden');
+      },200);
+    }
+
+    // Sonuç Modalı Göster
+    function showResultModal(entry) {
+      document.getElementById('finalTeamA').textContent = entry.teams[0];
+      document.getElementById('finalTeamB').textContent = entry.teams[1];
+      document.getElementById('finalScoreA').textContent = entry.totals.ta;
+      document.getElementById('finalScoreB').textContent = entry.totals.tb;
+      document.getElementById('gameTimeInfo').textContent = "Süre: "+formatTime(entry.duration);
+      let win = (entry.totals.ta>entry.totals.tb)?0:(entry.totals.tb>entry.totals.ta?1:-1);
+      // Damga
+      let emojiHa = '<span class="text-2xl mr-2">😄</span>';
+      let emojiLo = '<span class="text-2xl mr-2">😭</span>';
+      let zafer = `<span class="stamp stamp-zafer">${emojiHa} ZAFER</span>`;
+      let kaybeden = `<span class="stamp stamp-kaybeden">${emojiLo} KAYBEDENLER KULÜBÜ</span>`;
+      document.getElementById('finalStampA').innerHTML = win==0?zafer:win==1?kaybeden:'';
+      document.getElementById('finalStampB').innerHTML = win==1?zafer:win==0?kaybeden:'';
+      openModal('resultModal');
+      // Export Görseli sıfırla
+      document.getElementById('tableExportPreview').innerHTML = '';
+      document.getElementById('tableExportPreview').classList.add('hidden');
+    }
+    // Aynı kişilerle tekrar başlat
+    function restartSamePlayers() {
+      closeResultModal();
+      startGame(players);
+    }
+    // ---- Geçmişten aynı isimlerle başlatma
+    window.replayGame = function(id){
+      closeHistoryModal();
+      let entry = history.find(h=>h.id==id);
+      if(!entry) return;
+      startGame([...entry.players]);
+    }
+
+    // ---- Geçmişten tabloyu izleme & dışa aktarma
+    window.showPastTable = function(id){
+      closeHistoryModal();
+      let entry = history.find(h=>h.id==id);
+      if(!entry) return;
+      // Tabloyu modalda göster (dışa aktar da mümkün)
+      // Tablo görünümü göster (modalda)
+      const preview = document.getElementById('tableExportPreview');
+      preview.innerHTML = buildTableHTML(entry,false)+`<div class="flex mt-3 gap-2"><button onclick="exportScoresToImage(getEntry('${id}'))" class="flex-1 py-2 rounded bg-green-600 hover:bg-green-800 text-white font-bold flex items-center gap-2 justify-center"><i class="fas fa-image"></i> Tabloyu Dışa Aktar</button><button onclick="closeResultModal()" class="flex-1 py-2 rounded bg-red-600 text-white font-bold flex items-center gap-2 justify-center"><i class="fas fa-times"></i> Kapat</button></div>`;
+      openModal('resultModal');
+      preview.classList.remove('hidden');
+    }
+    window.getEntry = function(id) {
+      return history.find(h=>h.id==id);
+    }
+    // ---- Tablo HTML'ini oluştur (export/görsel için)
+    function buildCurrentTableExportHTML() {
+      // Mevcut oyun için tablo ve özet
+      let totals = getTotals();
+      let win = (totals.ta>totals.tb)?0:(totals.tb>totals.ta?1:-1);
+      let teams = getTeamNames();
+      let zafer = `<span class="stamp stamp-zafer"><span class="text-2xl mr-2">😄</span> ZAFER</span>`;
+      let kaybeden = `<span class="stamp stamp-kaybeden"><span class="text-2xl mr-2">😭</span> KAYBEDENLER KULÜBÜ</span>`;
+      return `<div class='bg-white p-4 rounded-xl max-w-2xl text-center'>
+        <h2 class='text-xl font-bold mb-2'>Okey 101 Eşli Puan Tablosu</h2>
+        <div class="flex items-center justify-center gap-7 mb-3 mt-2">
+          <div>
+            <div class="font-bold">${teams[0]}</div>
+            <div class="text-lg font-bold">${totals.ta}</div>
+            <div>${win==0?zafer:win==1?kaybeden:''}</div>
+          </div>
+          <div class="font-bold text-gray-500 text-3xl">-</div>
+          <div>
+            <div class="font-bold">${teams[1]}</div>
+            <div class="text-lg font-bold">${totals.tb}</div>
+            <div>${win==1?zafer:win==0?kaybeden:''}</div>
+          </div>
+        </div>
+        <table class="w-full text-xs md:text-base text-center border">
+          <thead><tr class="bg-blue-100">
+            <th>El</th><th>${players[0]}</th><th>${players[1]}</th><th>${players[2]}</th><th>${players[3]}</th>
+            <th>Toplam A</th><th>Toplam B</th>
+          </tr></thead>
+          <tbody>${
+          rounds.map((r,i)=>`<tr>
+            <td>${i+1}</td><td>${r.scores[0]}</td><td>${r.scores[1]}</td><td>${r.scores[2]}</td><td>${r.scores[3]}</td>
+            <td>${r.scores[0]+r.scores[2]}</td><td>${r.scores[1]+r.scores[3]}</td>
+          </tr>`).join('')
+          }</tbody>
+          <tfoot>
+            <tr class="bg-blue-50 font-bold">
+              <td>Toplam</td>
+              <td>${totals.p[0]}</td>
+              <td>${totals.p[1]}</td>
+              <td>${totals.p[2]}</td>
+              <td>${totals.p[3]}</td>
+              <td>${totals.ta}</td>
+              <td>${totals.tb}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`;
+    }
+    function buildTableHTML(entry,onlyTable) {
+      // Sadece tablo veya başlık+damga+tablo+toplamlar
+      const p = entry.players, teams=entry.teams, totals=entry.totals, rounds=entry.rounds;
+      let win = (totals.ta>totals.tb)?0:(totals.tb>totals.ta?1:-1);
+      let zafer = `<span class="stamp stamp-zafer"><span class="text-2xl mr-2">😄</span> ZAFER</span>`;
+      let kaybeden = `<span class="stamp stamp-kaybeden"><span class="text-2xl mr-2">😭</span> KAYBEDENLER KULÜBÜ</span>`;
+      let html = '';
+      if(!onlyTable){
+        html += `<div class='bg-white p-4 rounded-xl max-w-2xl text-center'>
+        <h2 class='text-xl font-bold mb-2'>Okey 101 Eşli Puan Tablosu</h2>
+        <div class="flex items-center justify-center gap-7 mb-3 mt-2">
+          <div>
+            <div class="font-bold">${teams[0]}</div>
+            <div class="text-lg font-bold">${totals.ta}</div>
+            <div>${win==0?zafer:win==1?kaybeden:''}</div>
+          </div>
+          <div class="font-bold text-gray-500 text-3xl">-</div>
+          <div>
+            <div class="font-bold">${teams[1]}</div>
+            <div class="text-lg font-bold">${totals.tb}</div>
+            <div>${win==1?zafer:win==0?kaybeden:''}</div>
+          </div>
+        </div>`;
+      }
+      html += `<table class="w-full text-xs md:text-base text-center border mb-2">
+          <thead><tr class="bg-blue-100">
+            <th>El</th><th>${p[0]}</th><th>${p[1]}</th><th>${p[2]}</th><th>${p[3]}</th>
+            <th>Toplam A</th><th>Toplam B</th>
+          </tr></thead>
+          <tbody>${
+            rounds.map((r,i)=>`<tr>
+              <td>${i+1}</td><td>${r.scores[0]}</td><td>${r.scores[1]}</td><td>${r.scores[2]}</td><td>${r.scores[3]}</td>
+              <td>${r.scores[0]+r.scores[2]}</td><td>${r.scores[1]+r.scores[3]}</td>
+            </tr>`).join('')
+          }</tbody>
+          <tfoot>
+            <tr class="bg-blue-50 font-bold">
+              <td>Toplam</td>
+              <td>${totals.p[0]}</td>
+              <td>${totals.p[1]}</td>
+              <td>${totals.p[2]}</td>
+              <td>${totals.p[3]}</td>
+              <td>${totals.ta}</td>
+              <td>${totals.tb}</td>
+            </tr>
+          </tfoot>
+        </table>`;
+      if(!onlyTable){
+        html += `</div>`;
+      }
+      return html;
+    }
+  </script>
+  <div style="margin-bottom:15px;margin-left:15px">powered By <a href="https://instagram.com/_hamdii__">Hamdi</a></div>
 </body>
 </html>
+
