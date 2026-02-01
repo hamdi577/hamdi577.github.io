@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KDV Hesaplayıcı</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a30;
+      --muted:#9fb0d0;
+      --text:#eaf0ff;
+      --line:rgba(255,255,255,.10);
+      --brand:#5eead4;
+      --brand2:#60a5fa;
+      --danger:#fb7185;
+      --shadow: 0 18px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --pad: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(96,165,250,.25), transparent 55%),
+        radial-gradient(900px 600px at 85% 15%, rgba(94,234,212,.20), transparent 55%),
+        radial-gradient(900px 700px at 50% 100%, rgba(251,113,133,.10), transparent 55%),
+        var(--bg);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:18px;
+    }
+
+    @media (max-width: 860px){
+      .app{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .header{
+      padding:18px 18px 14px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      justify-content:space-between;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    h1{
+      font-size:18px;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.3;
+    }
+
+    .badge{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:rgba(255,255,255,.85);
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+
+    .content{ padding:18px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 520px){
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    label{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .input, .selectBtn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      border-radius:var(--radius2);
+      padding:12px 12px;
+      outline:none;
+      transition:.15s border-color ease, .15s transform ease;
+    }
+    .input:focus, .selectBtn:focus{
+      border-color: rgba(94,234,212,.55);
+      box-shadow: 0 0 0 4px rgba(94,234,212,.10);
+    }
+    .input[type="number"]{ appearance:textfield; }
+    .hint{
+      font-size:12px;
+      color:rgba(159,176,208,.9);
+    }
+
+    /* Custom Dropdown */
+    .selectWrap{ position:relative; }
+    .selectBtn{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .chev{
+      width:10px;height:10px;
+      border-right:2px solid rgba(255,255,255,.7);
+      border-bottom:2px solid rgba(255,255,255,.7);
+      transform: rotate(45deg);
+      margin-top:-2px;
+      opacity:.8;
+    }
+    .menu{
+      position:absolute;
+      left:0; right:0;
+      top: calc(100% + 8px);
+      background: rgba(15,26,48,.95);
+      border:1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 22px 50px rgba(0,0,0,.45);
+      padding:6px;
+      display:none;
+      z-index:20;
+      max-height: 260px;
+      overflow:auto;
+      backdrop-filter: blur(10px);
+    }
+    .menu.open{ display:block; }
+    .item{
+      padding:10px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:13px;
+      color:rgba(255,255,255,.9);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .item:hover{ background: rgba(96,165,250,.10); }
+    .item.active{
+      background: rgba(94,234,212,.10);
+      border:1px solid rgba(94,234,212,.25);
+    }
+    .kTag{
+      font-family:var(--mono);
+      font-size:11px;
+      color:rgba(159,176,208,.95);
+      padding:3px 7px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+    }
+
+    /* Custom radio (KDV) */
+    .pillRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.02);
+      cursor:pointer;
+      user-select:none;
+      transition:.15s transform ease, .15s border-color ease, .15s background ease;
+      font-size:13px;
+    }
+    .pill:hover{ transform: translateY(-1px); }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      border:2px solid rgba(255,255,255,.55);
+      display:inline-block;
+    }
+    .pill.active{
+      border-color: rgba(94,234,212,.55);
+      background: rgba(94,234,212,.08);
+    }
+    .pill.active .dot{ border-color: var(--brand); background: var(--brand); }
+
+    /* Tevkifat toggle */
+    .toggleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 12px;
+      border-radius:var(--radius2);
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
+    .toggleMeta{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .toggleTitle{
+      font-size:13px;
+      margin:0;
+    }
+    .toggleDesc{
+      font-size:12px;
+      margin:0;
+      color:var(--muted);
+    }
+    .switch{
+      width:54px;height:30px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      position:relative;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .knob{
+      width:24px;height:24px;
+      border-radius:999px;
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      left:3px;
+      background: rgba(255,255,255,.85);
+      transition:.15s left ease, .15s background ease;
+    }
+    .switch.on{
+      background: rgba(94,234,212,.18);
+      border-color: rgba(94,234,212,.45);
+    }
+    .switch.on .knob{
+      left: calc(100% - 27px);
+      background: var(--brand);
+    }
+
+    .tevWrap{
+      margin-top:10px;
+      display:none;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .tevWrap.show{ display:flex; }
+    .selectSmall{
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      outline:none;
+    }
+
+    .divider{
+      height:1px;
+      background:var(--line);
+      margin:16px 0;
+    }
+
+    /* Results */
+    .results{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .resBox{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.02);
+      border-radius: var(--radius);
+      overflow:hidden;
+    }
+    .resHead{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .resHead h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .chip{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:rgba(255,255,255,.85);
+      background:rgba(255,255,255,.03);
+    }
+    .rows{
+      padding:10px 12px 14px;
+      display:grid;
+      gap:8px;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 10px;
+      border-radius:14px;
+      background: rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .row .k{ color:rgba(159,176,208,.95); font-size:12px; }
+    .row .v{ font-family:var(--mono); font-size:12.5px; }
+
+    .warn{
+      border:1px solid rgba(251,113,133,.35);
+      background: rgba(251,113,133,.08);
+      color: rgba(255,255,255,.92);
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:12px;
+      display:none;
+    }
+    .warn.show{ display:block; }
+
+    .footerNote{
+      margin-top:10px;
+      color:rgba(159,176,208,.9);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .btnRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color:rgba(255,255,255,.92);
+      cursor:pointer;
+      font-size:12px;
+    }
+    .btn.primary{
+      border-color: rgba(94,234,212,.45);
+      background: rgba(94,234,212,.10);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <!-- LEFT: Inputs -->
+    <section class="card">
+      <div class="header">
+        <div class="title">
+          <h1>KDV Hesaplayıcı</h1>
+          <p class="sub">Tutar, hesap türü, KDV oranı ve tevkifat seçimine göre dinamik hesaplama.</p>
+        </div>
+        <div class="badge" id="liveBadge">Canlı</div>
+      </div>
+
+      <div class="content">
+        <div class="grid">
+          <!-- Amount -->
+          <div class="field">
+            <label for="amount">Tutar</label>
+            <input id="amount" class="input" type="number" min="0" step="0.01" placeholder="Örn: 1000" />
+            <div class="hint">Seçtiğin “Hesaplama Türü”ne göre bu tutar farklı anlam taşır.</div>
+          </div>
+
+          <!-- Calc Type Dropdown -->
+          <div class="field">
+            <label>Hesaplama Türü</label>
+            <div class="selectWrap">
+              <button type="button" class="selectBtn" id="calcTypeBtn" aria-haspopup="listbox" aria-expanded="false">
+                <span id="calcTypeLabel">KDV Hariç Tutar</span>
+                <span class="chev" aria-hidden="true"></span>
+              </button>
+              <div class="menu" id="calcTypeMenu" role="listbox" tabindex="-1"></div>
+            </div>
+            <div class="hint">Örn: “KDV Dahil Tutar” seçersen girdiğin tutar KDV dahil kabul edilir.</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- VAT Rate -->
+        <div class="field">
+          <label>KDV Oranı</label>
+          <div class="pillRow" id="vatPills"></div>
+          <div id="customVatField" class="field" style="margin-top:10px; display:none;">
+            <label for="vatCustom">Diğer KDV (%)</label>
+            <input id="vatCustom" class="input" type="number" min="0" step="0.01" placeholder="Örn: 8" />
+            <div class="hint">Yüzde değer gir: 8 → %8</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Withholding -->
+        <div class="field">
+          <label>Tevkifat</label>
+          <div class="toggleRow">
+            <div class="toggleMeta">
+              <p class="toggleTitle" id="tevTitle">Tevkifat Yok</p>
+              <p class="toggleDesc" id="tevDesc">Kapalıyken tevkifat tutarı 0 kabul edilir.</p>
+            </div>
+            <div class="switch" id="tevSwitch" role="switch" aria-checked="false" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="tevWrap" id="tevWrap">
+            <select id="tevSelect" class="selectSmall" aria-label="Tevkifat Oranı"></select>
+            <span class="hint">Oran, KDV tutarı üzerinden uygulanır.</span>
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button class="btn" id="btnExample" type="button">Örnek Değer Doldur</button>
+          <button class="btn primary" id="btnReset" type="button">Sıfırla</button>
+        </div>
+
+        <div class="footerNote">
+          Not: Bu demo, senin verdiğin formülleri birebir uygular. Gerçek muhasebe senaryolarında mevzuat/istisna durumları olabilir.
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Results -->
+    <aside class="card">
+      <div class="header">
+        <div class="title">
+          <h1>Sonuçlar</h1>
+          <p class="sub">Tüm ara değerler aynı anda gösterilir.</p>
+        </div>
+        <div class="badge" id="stateBadge">—</div>
+      </div>
+
+      <div class="content results">
+        <div class="warn" id="warnBox"></div>
+
+        <div class="resBox">
+          <div class="resHead">
+            <h2>Hesap Özeti</h2>
+            <span class="chip" id="summaryChip">KDV %20 • Tevkifat Yok</span>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="k">KDV Hariç Tutar</span><span class="v" id="out_kdvHaric">—</span></div>
+            <div class="row"><span class="k">KDV Tutarı</span><span class="v" id="out_kdv">—</span></div>
+            <div class="row"><span class="k">KDV Dahil Tutar</span><span class="v" id="out_kdvDahil">—</span></div>
+            <div class="row"><span class="k">Tevkifat Tutarı</span><span class="v" id="out_tev">—</span></div>
+            <div class="row"><span class="k">Genel Toplam</span><span class="v" id="out_genel">—</span></div>
+            <div class="row"><span class="k">KDV’den Matrah</span><span class="v" id="out_kdvdenMatrah">—</span></div>
+          </div>
+        </div>
+
+        <div class="resBox">
+          <div class="resHead">
+            <h2>Teknik</h2>
+            <span class="chip" id="techChip">Formül seti</span>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="k">Girdi (anaTutar)</span><span class="v" id="out_input">—</span></div>
+            <div class="row"><span class="k">kdvOrani</span><span class="v" id="out_kdvOrani">—</span></div>
+            <div class="row"><span class="k">tevkifatAktif</span><span class="v" id="out_tevAktif">—</span></div>
+            <div class="row"><span class="k">tevkifatOrani</span><span class="v" id="out_tevOrani">—</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Data
+    // -----------------------------
+    const CALC_TYPES = [
+      { key: "KDV_HARIC", label: "KDV Hariç Tutar", tag: "Matrah" },
+      { key: "KDV_DAHIL", label: "KDV Dahil Tutar", tag: "Brüt" },
+      { key: "KDV_TUTARI", label: "KDV Tutarı", tag: "KDV" },
+      { key: "TEVKIFAT_TUTARI", label: "Tevkifat Tutarı", tag: "Tevkifat" },
+      { key: "GENEL_TOPLAM", label: "Genel Toplam", tag: "Nihai" },
+      { key: "KDVDEN_MATRAH", label: "KDV'den Matrah", tag: "Ters" },
+    ];
+
+    const VAT_OPTIONS = [
+      { key: "1", label: "%1", value: 0.01 },
+      { key: "10", label: "%10", value: 0.10 },
+      { key: "20", label: "%20", value: 0.20 },
+      { key: "CUSTOM", label: "Diğer", value: null },
+    ];
+
+    // Tevkifat oranları: 1/10..9/10 + TAM(1)
+    const TEV_OPTIONS = [
+      ...Array.from({ length: 9 }, (_, i) => {
+        const n = i + 1;
+        return { key: `${n}/10`, label: `${n}/10`, value: n / 10 };
+      }),
+      { key: "TAM", label: "TAM", value: 1 }
+    ];
+
+    // -----------------------------
+    // Elements
+    // -----------------------------
+    const elAmount = document.getElementById("amount");
+
+    const elCalcBtn = document.getElementById("calcTypeBtn");
+    const elCalcLabel = document.getElementById("calcTypeLabel");
+    const elCalcMenu = document.getElementById("calcTypeMenu");
+
+    const elVatPills = document.getElementById("vatPills");
+    const elVatCustomField = document.getElementById("customVatField");
+    const elVatCustom = document.getElementById("vatCustom");
+
+    const elTevSwitch = document.getElementById("tevSwitch");
+    const elTevWrap = document.getElementById("tevWrap");
+    const elTevSelect = document.getElementById("tevSelect");
+    const elTevTitle = document.getElementById("tevTitle");
+    const elTevDesc = document.getElementById("tevDesc");
+
+    const elWarn = document.getElementById("warnBox");
+
+    const elSummaryChip = document.getElementById("summaryChip");
+    const elStateBadge = document.getElementById("stateBadge");
+    const elTechChip = document.getElementById("techChip");
+
+    // Outputs
+    const out = (id) => document.getElementById(id);
+    const o = {
+      kdvHaric: out("out_kdvHaric"),
+      kdv: out("out_kdv"),
+      kdvDahil: out("out_kdvDahil"),
+      tev: out("out_tev"),
+      genel: out("out_genel"),
+      kdvdenMatrah: out("out_kdvdenMatrah"),
+      input: out("out_input"),
+      kdvOrani: out("out_kdvOrani"),
+      tevAktif: out("out_tevAktif"),
+      tevOrani: out("out_tevOrani"),
+    };
+
+    const btnExample = document.getElementById("btnExample");
+    const btnReset = document.getElementById("btnReset");
+
+    // -----------------------------
+    // State
+    // -----------------------------
+    const state = {
+      calcType: CALC_TYPES[0].key,
+      vatKey: "20",
+      vatCustomPercent: 8,
+      tevkifatAktif: false,
+      tevkifatKey: "7/10"
+    };
+
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    function clampNum(x){
+      if (!Number.isFinite(x)) return 0;
+      return x;
+    }
+
+    function fmtMoney(x){
+      // Basit gösterim: 2 ondalık. İstersen TR formatına çevirebiliriz.
+      if (!Number.isFinite(x)) return "—";
+      return x.toFixed(2);
+    }
+
+    function percentFromRate(rate){
+      return (rate * 100).toFixed(2).replace(/\.00$/,"");
+    }
+
+    function getVatRate(){
+      const opt = VAT_OPTIONS.find(v => v.key === state.vatKey);
+      if (!opt) return 0.20;
+      if (opt.key !== "CUSTOM") return opt.value;
+
+      const p = Number(elVatCustom.value);
+      if (!Number.isFinite(p)) return 0;
+      return p / 100;
+    }
+
+    function getTevRate(){
+      const opt = TEV_OPTIONS.find(t => t.key === state.tevkifatKey);
+      return opt ? opt.value : 0.7;
+    }
+
+    function setWarning(msg){
+      if (!msg){
+        elWarn.classList.remove("show");
+        elWarn.textContent = "";
+        return;
+      }
+      elWarn.classList.add("show");
+      elWarn.textContent = msg;
+    }
+
+    // -----------------------------
+    // UI builders
+    // -----------------------------
+    function buildCalcMenu(){
+      elCalcMenu.innerHTML = "";
+      CALC_TYPES.forEach(ct => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.dataset.key = ct.key;
+        div.innerHTML = `
+          <span>${ct.label}</span>
+          <span class="kTag">${ct.tag}</span>
+        `;
+        div.addEventListener("click", () => {
+          state.calcType = ct.key;
+          elCalcLabel.textContent = ct.label;
+          elCalcMenu.classList.remove("open");
+          elCalcBtn.setAttribute("aria-expanded","false");
+          renderCalcMenuActive();
+          computeAndRender();
+        });
+        elCalcMenu.appendChild(div);
+      });
+      renderCalcMenuActive();
+    }
+
+    function renderCalcMenuActive(){
+      [...elCalcMenu.querySelectorAll(".item")].forEach(it => {
+        it.classList.toggle("active", it.dataset.key === state.calcType);
+      });
+      const ct = CALC_TYPES.find(x => x.key === state.calcType);
+      elTechChip.textContent = ct ? ct.label : "Formül seti";
+    }
+
+    function buildVatPills(){
+      elVatPills.innerHTML = "";
+      VAT_OPTIONS.forEach(v => {
+        const pill = document.createElement("div");
+        pill.className = "pill";
+        pill.dataset.key = v.key;
+        pill.innerHTML = `<span class="dot"></span><span>${v.label}</span>`;
+        pill.addEventListener("click", () => {
+          state.vatKey = v.key;
+          renderVatPillsActive();
+          computeAndRender();
+        });
+        elVatPills.appendChild(pill);
+      });
+      renderVatPillsActive();
+    }
+
+    function renderVatPillsActive(){
+      [...elVatPills.querySelectorAll(".pill")].forEach(p => {
+        p.classList.toggle("active", p.dataset.key === state.vatKey);
+      });
+      const isCustom = state.vatKey === "CUSTOM";
+      elVatCustomField.style.display = isCustom ? "block" : "none";
+    }
+
+    function buildTevSelect(){
+      elTevSelect.innerHTML = "";
+      TEV_OPTIONS.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.key;
+        opt.textContent = t.label;
+        elTevSelect.appendChild(opt);
+      });
+      elTevSelect.value = state.tevkifatKey;
+    }
+
+    function renderTevkifatUI(){
+      elTevSwitch.classList.toggle("on", state.tevkifatAktif);
+      elTevSwitch.setAttribute("aria-checked", String(state.tevkifatAktif));
+      elTevWrap.classList.toggle("show", state.tevkifatAktif);
+
+      if (state.tevkifatAktif){
+        elTevTitle.textContent = "Tevkifat Var";
+        elTevDesc.textContent = "Seçilen oran KDV tutarı üzerinden düşülür.";
+      } else {
+        elTevTitle.textContent = "Tevkifat Yok";
+        elTevDesc.textContent = "Kapalıyken tevkifat tutarı 0 kabul edilir.";
+      }
+    }
+
+    // -----------------------------
+    // Core Calculation (your formulas)
+    // -----------------------------
+    function compute(){
+      const anaTutar = Number(elAmount.value);
+      const kdvOrani = getVatRate();
+      const tevkifatOrani = getTevRate();
+      const tevkifatAktif = state.tevkifatAktif;
+
+      // Guards / warnings
+      if (!Number.isFinite(anaTutar) || anaTutar < 0){
+        return { error: "Geçerli bir tutar gir." };
+      }
+      if (!Number.isFinite(kdvOrani) || kdvOrani <= 0){
+        return { error: "KDV oranı 0 veya geçersiz. Lütfen geçerli bir oran seç." };
+      }
+      if (tevkifatAktif && (!Number.isFinite(tevkifatOrani) || tevkifatOrani <= 0)){
+        return { error: "Tevkifat oranı geçersiz." };
+      }
+
+      let kdvTutari = 0;
+      let tevkifatTutari = 0;
+      let kdvHaricTutar = 0;
+      let kdvDahilTutar = 0;
+      let genelToplam = 0;
+      let kdvdenMatrah = 0;
+
+      switch (state.calcType){
+        case "KDV_HARIC":
+          // anaTutar = kdvHaricTutar
+          kdvTutari = anaTutar * kdvOrani;
+          tevkifatTutari = tevkifatAktif ? kdvTutari * tevkifatOrani : 0;
+          kdvDahilTutar = anaTutar + kdvTutari;
+          genelToplam = kdvDahilTutar - tevkifatTutari;
+          kdvdenMatrah = kdvTutari / kdvOrani;
+          kdvHaricTutar = anaTutar;
+          break;
+
+        case "KDV_DAHIL":
+          // anaTutar = kdvDahilTutar
+          kdvHaricTutar = anaTutar / (1 + kdvOrani);
+          kdvTutari = anaTutar - kdvHaricTutar;
+          tevkifatTutari = tevkifatAktif ? kdvTutari * tevkifatOrani : 0;
+          genelToplam = anaTutar - tevkifatTutari;
+          kdvdenMatrah = kdvTutari / kdvOrani;
+          kdvDahilTutar = anaTutar;
+          break;
+
+        case "KDV_TUTARI":
+          // anaTutar = kdvTutari
+          kdvTutari = anaTutar;
+          kdvHaricTutar = kdvTutari / kdvOrani;
+          kdvDahilTutar = kdvHaricTutar + kdvTutari;
+          tevkifatTutari = tevkifatAktif ? kdvTutari * tevkifatOrani : 0;
+          genelToplam = kdvDahilTutar - tevkifatTutari;
+          kdvdenMatrah = kdvTutari / kdvOrani;
+          break;
+
+        case "TEVKIFAT_TUTARI":
+          // anaTutar = tevkifatTutari
+          if (!tevkifatAktif){
+            return { error: "Tevkifat Tutarı hesabı için önce tevkifatı açmalısın." };
+          }
+          tevkifatTutari = anaTutar;
+          kdvTutari = tevkifatTutari / tevkifatOrani;
+          kdvHaricTutar = kdvTutari / kdvOrani;
+          kdvDahilTutar = kdvHaricTutar + kdvTutari;
+          genelToplam = kdvDahilTutar - tevkifatTutari;
+          kdvdenMatrah = kdvTutari / kdvOrani;
+          break;
+
+        case "GENEL_TOPLAM":
+          // anaTutar = genelToplam (girdi olarak kullan)
+          genelToplam = anaTutar;
+
+          // Verdiğin formül:
+          // kdvDahilTutar = genelToplam / (1 - (tevkifatAktif ? (kdvOrani * tevkifatOrani) / (1 + kdvOrani) : 0));
+          const factor = tevkifatAktif ? (kdvOrani * tevkifatOrani) / (1 + kdvOrani) : 0;
+          const denom = (1 - factor);
+          if (denom <= 0){
+            return { error: "Bu oranlarla genel toplam geri hesaplanamıyor (payda ≤ 0)." };
+          }
+
+          kdvDahilTutar = genelToplam / denom;
+          kdvHaricTutar = kdvDahilTutar / (1 + kdvOrani);
+          kdvTutari = kdvDahilTutar - kdvHaricTutar;
+          tevkifatTutari = tevkifatAktif ? kdvTutari * tevkifatOrani : 0;
+          kdvdenMatrah = kdvTutari / kdvOrani;
+          break;
+
+        case "KDVDEN_MATRAH":
+          // Senin metninde bu bölüm, "anaTutar = kdvTutari" gibi yazılmış.
+          // Başlık “KDV’den Matrah” olsa da formül seti KDV tutarı girdisiyle aynı.
+          kdvTutari = anaTutar;
+          kdvHaricTutar = kdvTutari / kdvOrani;
+          kdvDahilTutar = kdvHaricTutar + kdvTutari;
+          tevkifatTutari = tevkifatAktif ? kdvTutari * tevkifatOrani : 0;
+          genelToplam = kdvDahilTutar - tevkifatTutari;
+          kdvdenMatrah = kdvTutari / kdvOrani;
+          break;
+
+        default:
+          return { error: "Bilinmeyen hesaplama türü." };
+      }
+
+      return {
+        anaTutar,
+        kdvOrani,
+        tevkifatAktif,
+        tevkifatOrani,
+        kdvTutari,
+        tevkifatTutari,
+        kdvHaricTutar,
+        kdvDahilTutar,
+        genelToplam,
+        kdvdenMatrah
+      };
+    }
+
+    // -----------------------------
+    // Render
+    // -----------------------------
+    function computeAndRender(){
+      const vatRate = getVatRate();
+      const vatText = `KDV %${percentFromRate(vatRate)}`;
+
+      const tevText = state.tevkifatAktif
+        ? `Tevkifat ${state.tevkifatKey}`
+        : `Tevkifat Yok`;
+
+      elSummaryChip.textContent = `${vatText} • ${tevText}`;
+
+      const ct = CALC_TYPES.find(x => x.key === state.calcType);
+      elStateBadge.textContent = ct ? ct.label : "—";
+
+      const res = compute();
+      if (res.error){
+        setWarning(res.error);
+        // Clear outputs
+        Object.values(o).forEach(node => node.textContent = "—");
+        return;
+      }
+      setWarning("");
+
+      o.kdvHaric.textContent = fmtMoney(res.kdvHaricTutar);
+      o.kdv.textContent = fmtMoney(res.kdvTutari);
+      o.kdvDahil.textContent = fmtMoney(res.kdvDahilTutar);
+      o.tev.textContent = fmtMoney(res.tevkifatTutari);
+      o.genel.textContent = fmtMoney(res.genelToplam);
+      o.kdvdenMatrah.textContent = fmtMoney(res.kdvdenMatrah);
+
+      o.input.textContent = fmtMoney(res.anaTutar);
+      o.kdvOrani.textContent = res.kdvOrani.toFixed(4);
+      o.tevAktif.textContent = String(res.tevkifatAktif);
+      o.tevOrani.textContent = res.tevkifatAktif ? res.tevkifatOrani.toFixed(2) : "0.00";
+    }
+
+    // -----------------------------
+    // Events
+    // -----------------------------
+    elCalcBtn.addEventListener("click", () => {
+      const isOpen = elCalcMenu.classList.toggle("open");
+      elCalcBtn.setAttribute("aria-expanded", String(isOpen));
+      if (isOpen) elCalcMenu.focus();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      const wrap = elCalcBtn.closest(".selectWrap");
+      if (!wrap.contains(e.target)){
+        elCalcMenu.classList.remove("open");
+        elCalcBtn.setAttribute("aria-expanded","false");
+      }
+    });
+
+    // Keyboard support for dropdown toggle
+    elCalcBtn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        elCalcBtn.click();
+      }
+      if (e.key === "Escape"){
+        elCalcMenu.classList.remove("open");
+        elCalcBtn.setAttribute("aria-expanded","false");
+      }
+    });
+
+    elAmount.addEventListener("input", computeAndRender);
+    elVatCustom.addEventListener("input", computeAndRender);
+
+    elTevSwitch.addEventListener("click", () => {
+      state.tevkifatAktif = !state.tevkifatAktif;
+      renderTevkifatUI();
+      computeAndRender();
+    });
+    elTevSwitch.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        elTevSwitch.click();
+      }
+    });
+
+    elTevSelect.addEventListener("change", () => {
+      state.tevkifatKey = elTevSelect.value;
+      computeAndRender();
+    });
+
+    btnExample.addEventListener("click", () => {
+      elAmount.value = 1000;
+      state.calcType = "KDV_HARIC";
+      elCalcLabel.textContent = CALC_TYPES.find(x => x.key === state.calcType).label;
+      renderCalcMenuActive();
+
+      state.vatKey = "20";
+      renderVatPillsActive();
+
+      state.tevkifatAktif = true;
+      state.tevkifatKey = "7/10";
+      elTevSelect.value = state.tevkifatKey;
+      renderTevkifatUI();
+
+      computeAndRender();
+    });
+
+    btnReset.addEventListener("click", () => {
+      elAmount.value = "";
+      state.calcType = "KDV_HARIC";
+      elCalcLabel.textContent = CALC_TYPES[0].label;
+      state.vatKey = "20";
+      elVatCustom.value = "";
+      state.tevkifatAktif = false;
+      state.tevkifatKey = "7/10";
+      elTevSelect.value = state.tevkifatKey;
+
+      renderCalcMenuActive();
+      renderVatPillsActive();
+      renderTevkifatUI();
+      computeAndRender();
+    });
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    buildCalcMenu();
+    buildVatPills();
+    buildTevSelect();
+    renderTevkifatUI();
+    computeAndRender();
+  </script>
+</body>
+</html>
